@@ -2,6 +2,7 @@
 
 import os
 import random
+import subprocess
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
@@ -16,7 +17,7 @@ from moviepy.editor import (  # type: ignore
     vfx,
 )
 
-from utils import get_ffmpeg_binary, is_ffmpeg_available, temp_workspace
+from utils import get_ffmpeg_binary, temp_workspace
 
 
 @dataclass
@@ -38,8 +39,8 @@ def render_project(config: RenderConfig) -> str:
     if not ffmpeg_bin:
         raise RuntimeError("FFmpeg not detected in PATH. Install FFmpeg to render video.")
 
-    with temp_workspace():
-        clips = load_inputs(config)
+    with temp_workspace() as workspace:
+        clips = load_inputs(config, workspace, ffmpeg_bin)
         clips = apply_scramble(clips, config, rng)
         clips = apply_stutter(clips, config, rng)
         clips = apply_reverse(clips, config, rng)
@@ -54,12 +55,29 @@ def render_project(config: RenderConfig) -> str:
         return config.output_path
 
 
-def load_inputs(config: RenderConfig):
+def _transcode_for_windows_compat(src_path: str, workspace: str, ffmpeg_bin: str) -> str:
+    """Re-encode input into a safer H.264/AAC MP4 for old FFmpeg/Windows 8.1 paths."""
+    out_path = os.path.join(workspace, os.path.basename(src_path) + ".compat.mp4")
+    cmd = [
+        ffmpeg_bin, "-y", "-i", src_path,
+        "-c:v", "libx264", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-movflags", "+faststart",
+        out_path,
+    ]
+    subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return out_path
+
+
+def load_inputs(config: RenderConfig, workspace: str, ffmpeg_bin: str):
     clips = []
     for p in config.media_paths:
         ext = os.path.splitext(p.lower())[1]
         if ext in {".mp4", ".avi", ".mov", ".mkv", ".webm", ".gif"}:
-            clips.append(VideoFileClip(p))
+            try:
+                clips.append(VideoFileClip(p))
+            except Exception:
+                compat_path = _transcode_for_windows_compat(p, workspace, ffmpeg_bin)
+                clips.append(VideoFileClip(compat_path))
         elif ext in {".png", ".jpg", ".jpeg", ".bmp"}:
             clips.append(ImageClip(p, duration=2.0))
         elif ext in {".mp3", ".wav", ".ogg", ".m4a"}:

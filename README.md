@@ -45,3 +45,8 @@ python main.py
 - Renderer is tuned for MoviePy 1.0.1 style `write_videofile` usage.
 - FFmpeg binary is detected from PATH and passed explicitly to MoviePy when exporting and previewing.
 - Export uses primary `libx264` settings with a fallback `mpeg4` mode for stricter/older FFmpeg setups.
+
+
+## Windows 8.1 First-Frame Compatibility
+- If MoviePy cannot read the first frame of a video, FreePoop V4 now auto-transcodes that input to a compatibility MP4 (H.264/AAC, yuv420p) before retrying.
+- This helps with older/deprecated FFmpeg builds often found on Windows 8.1 machines.
