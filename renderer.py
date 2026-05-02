@@ -13,6 +13,7 @@ from moviepy.editor import (  # type: ignore
     TextClip,
     VideoFileClip,
     concatenate_videoclips,
+    vfx,
 )
 
 from utils import is_ffmpeg_available, temp_workspace
@@ -84,14 +85,14 @@ def apply_stutter(clips, config, rng):
     for clip in clips:
         out.append(clip)
         if rng.random() < 0.6:
-            out.append(clip.subclip(0, min(0.2, clip.duration)).fx(lambda c: c.loop(n=3)))
+            out.append(clip.subclip(0, min(0.2, clip.duration)).fx(vfx.loop, n=3))
     return out
 
 
 def apply_reverse(clips, config, rng):
     if not config.effects.get("reverse"):
         return clips
-    return [c.fx(lambda clip: clip.time_mirror()) if rng.random() < 0.5 else c for c in clips]
+    return [c.fx(vfx.time_mirror) if rng.random() < 0.5 else c for c in clips]
 
 
 def apply_random_cuts(clips, config, rng):
@@ -136,7 +137,7 @@ def apply_glitch(clips, config, rng):
     out = []
     for c in clips:
         if c.duration > 0.4 and rng.random() < 0.7:
-            seg = c.subclip(0, min(0.12, c.duration)).fx(lambda x: x.loop(n=4))
+            seg = c.subclip(0, min(0.12, c.duration)).fx(vfx.loop, n=4)
             out.extend([seg, c])
         else:
             out.append(c)
