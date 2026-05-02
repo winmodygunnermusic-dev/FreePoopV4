@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 from moviepy.editor import (  # type: ignore
     AudioFileClip,
     CompositeVideoClip,
+    ColorClip,
     ImageClip,
     TextClip,
     VideoFileClip,
@@ -61,7 +62,8 @@ def load_inputs(config: RenderConfig):
             clips.append(ImageClip(p, duration=2.0))
         elif ext in {".mp3", ".wav", ".ogg", ".m4a"}:
             audio = AudioFileClip(p)
-            clips.append(ImageClip((0, 0, 0), duration=min(6, audio.duration)).set_audio(audio))
+            black_bg = ColorClip(size=(1280, 720), color=(0, 0, 0), duration=min(6, audio.duration))
+            clips.append(black_bg.set_audio(audio))
     if not clips:
         raise ValueError("No valid media clips loaded.")
     return clips
