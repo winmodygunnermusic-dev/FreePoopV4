@@ -18,7 +18,7 @@ Absurdist remix engine for generating YouTube-Poop style montage videos from mix
 ## Install (Python 3.8)
 
 ```bash
-pip install moviepy pillow requests
+pip install "moviepy==1.0.1" pillow requests
 ```
 
 Install FFmpeg and ensure `ffmpeg` is available in PATH.
@@ -39,3 +39,9 @@ python main.py
 ## Notes
 - URL import is currently list + placeholder download helper; direct streaming and extractor support is intentionally left as extension work.
 - Pitch shift toggle is exposed in GUI as an optional hook, but not implemented by default to avoid heavy dependencies.
+
+
+## Compatibility Mode (MoviePy 1.0.1 + FFmpeg)
+- Renderer is tuned for MoviePy 1.0.1 style `write_videofile` usage.
+- FFmpeg binary is detected from PATH and passed explicitly to MoviePy when exporting and previewing.
+- Export uses primary `libx264` settings with a fallback `mpeg4` mode for stricter/older FFmpeg setups.

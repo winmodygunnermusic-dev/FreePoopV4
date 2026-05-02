@@ -3,7 +3,7 @@
 import os
 import random
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from moviepy.editor import (  # type: ignore
     AudioFileClip,
@@ -16,7 +16,7 @@ from moviepy.editor import (  # type: ignore
     vfx,
 )
 
-from utils import is_ffmpeg_available, temp_workspace
+from utils import get_ffmpeg_binary, is_ffmpeg_available, temp_workspace
 
 
 @dataclass
@@ -34,7 +34,8 @@ class RenderConfig:
 # --- Hook-friendly pipeline API ---
 def render_project(config: RenderConfig) -> str:
     rng = random.Random(config.seed)
-    if not is_ffmpeg_available():
+    ffmpeg_bin = get_ffmpeg_binary()
+    if not ffmpeg_bin:
         raise RuntimeError("FFmpeg not detected in PATH. Install FFmpeg to render video.")
 
     with temp_workspace():
@@ -49,7 +50,7 @@ def render_project(config: RenderConfig) -> str:
         final = concatenate(clips)
         final = apply_overlays(final, config, rng)
         final = apply_subtitle_spam(final, config, rng)
-        export(final, config)
+        export(final, config, ffmpeg_bin)
         return config.output_path
 
 
@@ -177,10 +178,35 @@ def apply_subtitle_spam(final, config, rng):
     return CompositeVideoClip(layers).set_duration(final.duration)
 
 
-def export(final, config):
-    w, h = [int(x) for x in config.resolution.lower().split("x")]
+def _parse_resolution(value: str) -> Tuple[int, int]:
+    try:
+        w_str, h_str = value.lower().split("x")
+        return int(w_str), int(h_str)
+    except Exception:
+        return 1280, 720
+
+
+def export(final, config, ffmpeg_bin):
+    w, h = _parse_resolution(config.resolution)
     final = final.resize((w, h))
     try:
-        final.write_videofile(config.output_path, fps=config.fps, codec="libx264", audio_codec="aac")
+        final.write_videofile(
+            config.output_path,
+            fps=config.fps,
+            codec="libx264",
+            audio_codec="aac",
+            preset="medium",
+            threads=2,
+            ffmpeg_params=["-movflags", "+faststart"],
+            ffmpeg_binary=ffmpeg_bin,
+        )
     except Exception:
-        final.write_videofile(config.output_path, fps=config.fps, preset="ultrafast")
+        final.write_videofile(
+            config.output_path,
+            fps=config.fps,
+            codec="mpeg4",
+            audio_codec="aac",
+            preset="ultrafast",
+            threads=1,
+            ffmpeg_binary=ffmpeg_bin,
+        )

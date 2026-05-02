@@ -7,7 +7,7 @@ from typing import Optional
 
 from moviepy.editor import VideoFileClip  # type: ignore
 
-from utils import is_ffmpeg_available
+from utils import get_ffmpeg_binary, is_ffmpeg_available
 
 
 def generate_preview_frame(video_path: str, timestamp: float = 0.5, width: int = 320, height: int = 180) -> Optional[str]:
@@ -15,9 +15,10 @@ def generate_preview_frame(video_path: str, timestamp: float = 0.5, width: int =
     fd, out_png = tempfile.mkstemp(prefix="freepoop_preview_", suffix=".png")
     os.close(fd)
 
-    if is_ffmpeg_available():
+    ffmpeg_bin = get_ffmpeg_binary()
+    if is_ffmpeg_available() and ffmpeg_bin:
         cmd = [
-            "ffmpeg", "-y", "-ss", str(timestamp), "-i", video_path,
+            ffmpeg_bin, "-y", "-ss", str(timestamp), "-i", video_path,
             "-frames:v", "1", "-vf", "scale=%d:%d" % (width, height), out_png,
         ]
         try:

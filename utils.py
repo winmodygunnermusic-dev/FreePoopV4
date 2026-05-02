@@ -14,7 +14,12 @@ except Exception:  # optional dependency fallback
 
 def is_ffmpeg_available() -> bool:
     """Check whether ffmpeg is visible in PATH."""
-    return shutil.which("ffmpeg") is not None
+    return get_ffmpeg_binary() is not None
+
+
+def get_ffmpeg_binary() -> Optional[str]:
+    """Return ffmpeg executable path for MoviePy 1.0.1 compatibility."""
+    return shutil.which("ffmpeg")
 
 
 def ensure_dir(path: str) -> None:
