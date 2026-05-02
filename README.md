@@ -18,7 +18,7 @@ Absurdist remix engine for generating YouTube-Poop style montage videos from mix
 ## Install (Python 3.8)
 
 ```bash
-pip install "moviepy==1.0.1" pillow requests
+pip install requests
 ```
 
 Install FFmpeg and ensure `ffmpeg` is available in PATH.
@@ -42,11 +42,17 @@ python main.py
 
 
 ## Compatibility Mode (MoviePy 1.0.1 + FFmpeg)
-- Renderer is tuned for MoviePy 1.0.1 style `write_videofile` usage.
-- FFmpeg binary is detected from PATH and passed explicitly to MoviePy when exporting and previewing.
-- Export uses primary `libx264` settings with a fallback `mpeg4` mode for stricter/older FFmpeg setups.
+- Renderer is FFmpeg-first and does not require MoviePy for render/preview paths.
+- FFmpeg binary is detected from PATH and used directly for exporting and previewing.
+- Export uses direct FFmpeg `libx264`/AAC with compatibility-safe pixel format (`yuv420p`).
 
 
-## Windows 8.1 First-Frame Compatibility
-- If MoviePy cannot read the first frame of a video, FreePoop V4 now auto-transcodes that input to a compatibility MP4 (H.264/AAC, yuv420p) before retrying.
+## Windows 8.1 Input Compatibility
+- FreePoop V4 auto-normalizes inputs to compatibility MP4 (H.264/AAC, yuv420p) before remixing.
 - This helps with older/deprecated FFmpeg builds often found on Windows 8.1 machines.
+
+
+## FFmpeg-Only Pipeline
+- Rendering and preview now run in FFmpeg-only mode (no MoviePy dependency in the critical path).
+- Inputs are normalized to compatibility MP4 first, then effect filters are applied, then clips are concatenated.
+- This significantly improves behavior on older Windows 8.1 FFmpeg installs.
